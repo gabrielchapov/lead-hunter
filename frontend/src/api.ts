@@ -49,18 +49,23 @@ export async function clearAllLeads(): Promise<{ status: string; deleted_count: 
   return res.json();
 }
 
+interface OverpassImportResult {
+  status: "imported" | "no_results";
+  location: string;
+  category: string | null;
+  // Only present when status === "imported"
+  new_count?: number;
+  total_scraped?: number;
+  duplicates_skipped?: number;
+  // Only present when status === "no_results"
+  message?: string;
+}
+
 export async function importFromOverpass(
   location: string,
   category: string | null,
   radius_km: number = 25
-): Promise<{
-  status: string;
-  location: string;
-  category: string | null;
-  new_count: number;
-  total_scraped: number;
-  duplicates_skipped: number;
-}> {
+): Promise<OverpassImportResult> {
   const res = await fetch(`${API_BASE}/leads/import-overpass`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
