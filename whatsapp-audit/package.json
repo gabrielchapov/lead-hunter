@@ -1,0 +1,18 @@
+{
+  "name": "whatsapp-bot-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Semi-automated WhatsApp bot reliability tester for the Lead Finder project",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dry-run": "node src/index.js --dry-run"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.26.0",
+    "qrcode-terminal": "^0.12.0",
+    "csv-parse": "^5.5.6",
+    "csv-stringify": "^6.5.1"
+  }
+}

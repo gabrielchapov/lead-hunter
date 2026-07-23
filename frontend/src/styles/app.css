@@ -1,0 +1,164 @@
+/* Lead Hunter — view/layout-specific CSS. Tokens + component classes
+   live in tokens.css; this file is the app's actual screens. */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* — top nav — */
+.topnav {
+  display: flex; align-items: center; gap: var(--space-6);
+  height: 56px; flex: none;
+  padding: 0 var(--space-4);
+  border-bottom: 2px solid var(--color-divider);
+}
+.topnav-brand { display: flex; align-items: center; gap: var(--space-2); margin-right: var(--space-6); }
+.topnav-brand-mark {
+  width: 22px; height: 22px; background: var(--color-accent); flex: none;
+}
+.topnav-brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+.topnav-brand-name { font-family: var(--font-heading); font-weight: 800; font-size: 19px; }
+.topnav-brand-tag { font-size: 11px; color: var(--color-neutral-600); }
+
+.topnav-tabs { display: flex; align-items: stretch; height: 100%; gap: var(--space-4); }
+.topnav-tab {
+  display: flex; align-items: center; gap: 6px; height: 100%;
+  font-family: var(--font-heading); font-weight: 800; font-size: 14px;
+  color: var(--color-text); background: none; border: none; cursor: pointer;
+  border-bottom: 3px solid transparent; padding: 0 2px;
+}
+.topnav-tab.is-active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.topnav-tab:hover:not(.is-active) { color: var(--color-neutral-800); }
+
+.topnav-export { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+.topnav-export-label { font-size: 12px; color: var(--color-neutral-600); margin-right: 2px; }
+
+.view { flex: 1; min-height: 0; position: relative; }
+
+/* — Mapa view — */
+.mapa-view { position: relative; height: 100%; }
+.map-canvas { position: absolute; inset: 0; }
+.map-canvas.is-hidden { display: none; }
+
+.search-card {
+  position: fixed; top: 72px; left: var(--space-4); z-index: 1000;
+  width: 298px; background: var(--color-surface); border: 2px solid var(--color-text);
+  box-shadow: var(--shadow-lg); padding: var(--space-4); display: flex;
+  flex-direction: column; gap: var(--space-3);
+}
+.search-card-slider-row { display: flex; justify-content: space-between; align-items: baseline; }
+.search-card-slider-row .value { color: var(--color-accent); font-family: var(--font-heading); font-weight: 800; font-size: 13px; }
+.search-card-footer { font-size: 12px; color: var(--color-neutral-700); }
+.search-card-footer b { color: var(--color-text); }
+
+.legend-card {
+  position: fixed; bottom: var(--space-4); left: var(--space-4); z-index: 1000;
+  background: var(--color-surface); border: 2px solid var(--color-divider);
+  box-shadow: var(--shadow-md); padding: var(--space-3) var(--space-4);
+  display: flex; gap: var(--space-4);
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+.results-drawer {
+  position: fixed; top: 56px; right: 0; bottom: 0; width: 340px; z-index: 1000;
+  background: var(--color-surface); border-left: 2px solid var(--color-text);
+  display: flex; flex-direction: column;
+}
+.results-drawer-header { padding: var(--space-4); border-bottom: 2px solid var(--color-divider); display: flex; flex-direction: column; gap: var(--space-2); }
+.results-drawer-title { font-family: var(--font-heading); font-weight: 800; font-size: 16px; display: flex; align-items: baseline; gap: 6px; }
+.results-drawer-title span.sub { font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--color-neutral-600); }
+.channel-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.channel-chip {
+  font-size: 11px; padding: 4px 10px; border: 1px solid var(--color-divider);
+  background: transparent; color: var(--color-text); cursor: pointer;
+}
+.channel-chip.is-active { background: var(--color-accent); color: #071023; border-color: var(--color-accent); }
+.results-drawer-controls { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; }
+.results-drawer-controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+.results-list { flex: 1; overflow-y: auto; padding: var(--space-2); display: flex; flex-direction: column; gap: 8px; }
+.results-drawer-footer { padding: var(--space-3); border-top: 2px solid var(--color-divider); }
+
+.lead-card {
+  border: 1px solid var(--color-divider); background: var(--color-bg);
+  padding: var(--space-3); cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+  border-left: 1px solid var(--color-divider);
+}
+.lead-card.is-selected { border-color: var(--color-accent); border-left: 3px solid var(--color-accent); padding-left: calc(var(--space-3) - 2px); }
+.lead-card-row1 { display: flex; justify-content: space-between; gap: var(--space-2); }
+.lead-card-name { font-family: var(--font-heading); font-weight: 800; font-size: 14px; }
+.lead-card-address { font-size: 11px; color: var(--color-neutral-700); margin-top: 2px; }
+.lead-card-score { display: flex; align-items: center; gap: 6px; }
+.lead-card-score-num { font-family: var(--font-heading); font-weight: 800; font-size: 15px; }
+.lead-card-score-num.is-hot { color: var(--color-accent); }
+.lead-card-contact { font-size: 11px; color: var(--color-neutral-700); }
+.lead-card-actions { display: flex; gap: 6px; margin-top: 2px; }
+.lead-card-actions .btn { font-size: 12px; padding: 5px 10px; flex: 1; }
+
+.empty-state { padding: var(--space-6); text-align: center; color: var(--color-neutral-600); font-size: 13px; }
+
+/* — Kanban view — */
+.kanban-view { height: 100%; overflow: auto; padding: var(--space-6); }
+.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-text); min-height: 100%; }
+.kanban-column { border-right: 2px solid var(--color-divider); display: flex; flex-direction: column; }
+.kanban-column:last-child { border-right: none; }
+.kanban-column-header {
+  padding: var(--space-3); border-bottom: 2px solid var(--color-divider);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-heading); font-weight: 800; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.kanban-column-header .count { color: var(--color-accent); }
+.kanban-column-body { padding: var(--space-2); display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+.kanban-card { border: 1px solid var(--color-divider); background: var(--color-surface); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: 4px; }
+.kanban-card-name { font-family: var(--font-heading); font-weight: 800; font-size: 13px; }
+.kanban-card-cat { font-size: 11px; color: var(--color-neutral-700); }
+.kanban-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.kanban-card-moves { display: flex; gap: 4px; }
+.kanban-card-moves button {
+  width: 22px; height: 22px; border: 1px solid var(--color-divider); background: transparent;
+  color: var(--color-text); cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.kanban-card-moves button:disabled { opacity: 0.25; cursor: not-allowed; }
+
+/* — Painel view — */
+.painel-view { height: 100%; overflow-y: auto; padding: 28px 32px; }
+.painel-subtitle { color: var(--color-neutral-600); font-size: 13px; margin-top: -6px; }
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-text); margin: var(--space-6) 0; }
+.stat-cell { padding: var(--space-4); border-right: 2px solid var(--color-text); }
+.stat-cell:last-child { border-right: none; }
+.stat-number { font-family: var(--font-heading); font-weight: 800; font-size: 38px; color: var(--color-accent); line-height: 1; }
+.stat-label { font-size: 10px; text-transform: uppercase; color: var(--color-neutral-600); margin-top: 6px; letter-spacing: 0.04em; }
+
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+.chart-card h5 { margin-bottom: var(--space-3); }
+.bar-row { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); font-size: 12px; }
+.bar-row .bar-label { width: 130px; flex: none; color: var(--color-neutral-700); }
+.bar-track { flex: 1; height: 12px; background: var(--color-neutral-200); position: relative; }
+.bar-fill { height: 100%; }
+.bar-row .bar-count { width: 28px; text-align: right; flex: none; }
+
+/* — Mensagens view — */
+.mensagens-view { height: 100%; overflow-y: auto; padding: 28px 32px; }
+.mensagens-grid { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-6); max-width: 980px; }
+.variable-buttons { display: flex; gap: 6px; margin-bottom: var(--space-2); flex-wrap: wrap; }
+.template-note { font-size: 12px; color: var(--color-neutral-700); margin-top: var(--space-2); }
+.preview-panel { border: 2px solid var(--color-divider); padding: var(--space-4); background: var(--color-surface); }
+.whatsapp-mock {
+  background: #e7ded4; border: 2px solid var(--color-text); padding: var(--space-4);
+  min-height: 160px; display: flex; align-items: flex-start;
+}
+.whatsapp-bubble {
+  background: #fff; color: #1c1c1c; padding: 10px 12px; max-width: 280px;
+  font-size: 13px; line-height: 1.5; box-shadow: var(--shadow-sm);
+}
+.preview-caption { font-size: 11px; color: var(--color-neutral-700); margin-top: var(--space-2); }
+
+/* — Leaflet overrides — */
+.leaflet-container { background: var(--color-bg); font-family: var(--font-body); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--color-surface); color: var(--color-text); border-radius: 0; }
+.lead-tooltip { font-size: 12px; font-family: var(--font-body); }

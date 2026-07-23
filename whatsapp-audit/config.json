@@ -1,0 +1,16 @@
+{
+  "safety": {
+    "minDelaySeconds": 45,
+    "maxDelaySeconds": 180,
+    "maxTestsPerDay": 15,
+    "activeHours": { "start": 9, "end": 19 },
+    "simulateTyping": true,
+    "replyWaitSeconds": 90,
+    "gapBetweenMessagesSeconds": { "min": 4, "max": 9 }
+  },
+  "paths": {
+    "leadsFile": "data/leads.csv",
+    "resultsFile": "data/results.csv",
+    "audioTestFile": "data/test_audio.ogg"
+  }
+}

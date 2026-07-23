@@ -1,0 +1,16 @@
+node_modules/
+.wwebjs_auth/
+.wwebjs_cache/
+data/results.csv
+*.log
+
+# backend
+__pycache__/
+*.pyc
+*.egg-info/
+backend/prospects.db
+backend/.env
+
+# frontend
+frontend/dist/
+frontend/.env.local
