@@ -1,0 +1,26 @@
+# Render Blueprint — deploys the FastAPI backend as a free web service.
+# See DEPLOYMENT.md for the full setup walkthrough (Neon Postgres +
+# Cloudflare Pages frontend + wiring the env vars between them).
+#
+# To use: push this repo to GitHub, then in the Render dashboard choose
+# "New +" -> "Blueprint" and point it at the repo. Render reads this file
+# automatically.
+services:
+  - type: web
+    name: lead-hunter-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -e .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Neon Postgres connection string — set manually in the Render
+      # dashboard after creating the Neon project (see DEPLOYMENT.md).
+      # `sync: false` just means "don't store this value in the repo,
+      # I'll enter it by hand" — Render still creates the env var slot.
+      - key: DATABASE_URL
+        sync: false
+      # Your Cloudflare Pages URL, e.g. https://lead-hunter.pages.dev
+      # Set this AFTER the frontend is deployed and you know its URL.
+      - key: CORS_ORIGINS
+        sync: false

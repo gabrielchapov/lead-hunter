@@ -7,12 +7,8 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "sqlalchemy>=2.0.0",
-    "alembic>=1.14.0",
     "psycopg2-binary>=2.9.0",
     "python-dotenv>=1.0.0",
-    "pandas>=2.2.0",
-    "httpx>=0.28.0",
-    "beautifulsoup4>=4.12.0",
     "requests>=2.32.0",
     "geopy>=2.4.0",
 ]

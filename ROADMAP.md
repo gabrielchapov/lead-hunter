@@ -77,38 +77,44 @@ first time you rely on it for actual client work:
    distortion-wise for Brazil's latitudes, but note it explicitly — don't
    reuse this conversion if this ever expands to higher latitudes.
 
-## Phase 2 — Deployment
+## Phase 2 — Deployment (done — see DEPLOYMENT.md)
 
-Currently "deployed" means double-clicking `start-clean.bat`, which opens two
-`cmd` windows running dev servers (`vite`, `uvicorn --reload`) on your own
-machine. That's fine for building, not for "a tool I can deploy and use
-normally" — it dies when you close the terminal, isn't reachable from your
-phone, and has no restart-on-crash.
+Was: double-clicking `start-clean.bat`, which opens two `cmd` windows
+running dev servers (`vite`, `uvicorn --reload`) on your own machine. Dies
+when you close the terminal, isn't reachable from your phone, no
+restart-on-crash.
 
-Given this is a solo tool (not a multi-tenant SaaS), the pragmatic path:
+Decided and implemented this session: **Render (free web service) + Neon
+(free Postgres) for the backend, Cloudflare Pages (free static hosting) for
+the frontend.** Full step-by-step in `DEPLOYMENT.md`. Notes on why, for
+future reference:
 
-1. **Backend:** containerize with a small `Dockerfile` (`python:3.11-slim`,
-   `pip install -e .`, `uvicorn app.main:app --host 0.0.0.0 --port 8000`, no
-   `--reload` in prod). Deploy to a low/no-cost PaaS — Fly.io or Railway both
-   have small free/cheap tiers and handle TLS, restarts, and logs for you
-   with a `git push` deploy. A $5-6/mo VPS (Hetzner, DigitalOcean) with
-   Docker Compose + Caddy (automatic HTTPS, ~10 lines of config) is the
-   next step up if you outgrow PaaS limits or want the enrichment/WhatsApp
-   pieces on a persistent machine.
-2. **Frontend:** `npm run build` produces static files — deploy to Vercel,
-   Netlify, or Cloudflare Pages (all free for this traffic level). Point
-   `VITE_API_BASE` at your deployed backend URL via their env var UI.
-3. **Database:** SQLite is a legitimate choice for a single-user tool at this
-   scale (thousands of rows, one writer) — don't reach for Postgres just
-   because it's "more production." The real gap is **backups**: right now a
-   corrupted or lost `prospects.db` loses everything with no recovery path.
-   Add a daily `sqlite3 prospects.db ".backup backup-$(date +%F).db"` cron
-   (or your PaaS's volume snapshot feature) writing to a second location —
-   cheap insurance. Revisit Postgres only if you add multiple simultaneous
-   users or need concurrent writes.
-4. Stop relying on `.bat` scripts as the deployment mechanism — keep them for
-   local dev convenience, but production should start via the container's
-   own entrypoint / the PaaS's process manager, not a Windows batch file.
+- **Railway was the original idea but isn't actually free.** It requires a
+  credit card, gives a 30-day $5 trial, then a persistent service with a
+  database costs $5/mo minimum on the Hobby plan — the "Free" plan only
+  covers a tiny always-on service with no room for a database. If cold
+  starts (see below) ever become annoying enough to pay to remove, Railway
+  Hobby or Render's paid tier (~$7/mo) are both reasonable upgrades with
+  no further code changes.
+- **SQLite → Postgres migration was required, not optional**, given the
+  free-tier constraint: Render's free web services have an *ephemeral*
+  filesystem (any local file, including a SQLite database, gets wiped on
+  every restart/redeploy). `backend/app/database.py` now reads `DATABASE_URL`
+  from the environment when present (points at Neon in production) and
+  falls back to a local SQLite file otherwise (unchanged for local dev via
+  `start-clean.bat`).
+- **Trade-off accepted:** Render's free tier spins the backend down after
+  ~15 min idle; the next request wakes it in ~30-60s. Fine for a solo tool
+  checked a few times a day, annoying for anything latency-sensitive.
+- `render.yaml` at the repo root defines the backend service as
+  infrastructure-as-code — Render reads it automatically via its
+  "Blueprint" deploy flow, no manual dashboard clicking through settings.
+- Removed `backend/requirements.txt` entirely (it had already drifted out
+  of sync with `pyproject.toml` once this session — two manifests for one
+  project is a bug generator). `pyproject.toml` is now the single source
+  of truth; Render's build command is `pip install -e .`.
+- Every `git push` to `main` redeploys both sides automatically — no
+  manual deploy steps after the initial DEPLOYMENT.md setup.
 
 ## Phase 3 — Access control
 
@@ -157,9 +163,9 @@ the end state — it's a placeholder for a real lookup:
    `logging.exception()` in the `except` blocks instead of manual
    `traceback.print_exc()`).
 2. Ship logs somewhere you'll actually see them once this isn't running in a
-   terminal in front of you — even just the PaaS's built-in log viewer
-   (Fly.io/Railway both have one) is enough at this scale; don't over-invest
-   in a dedicated log aggregator yet.
+   terminal in front of you — Render's dashboard has a built-in log viewer
+   that's enough at this scale; don't over-invest in a dedicated log
+   aggregator yet.
 3. A basic uptime check (UptimeRobot free tier, ping `/` every 5 min) so you
    find out the backend died before a prospect does.
 
@@ -168,17 +174,21 @@ the end state — it's a placeholder for a real lookup:
 Skip unless/until it's actually needed:
 - Multi-user accounts, if you bring on a VA or sell access to other
   consultants doing the same play in different cities.
-- Postgres migration, if you need concurrent writers or outgrow SQLite's
-  single-writer model.
+- Moving off Neon's free tier (0.5GB storage, 100 compute-hours/month) if
+  you genuinely outgrow it — unlikely at lead-gen scale, but if it happens
+  it's a billing upgrade on the same database, not a re-migration.
 - A queue (Celery/RQ) for enrichment/audit jobs, once those become slow
   enough to block the request-response cycle.
 
 ## Suggested order of attack
 
-Given the goal is "a tool I can deploy and use normally" (not resell), the
-highest-leverage next three moves are: **(1)** git init + first commit so
-future debugging isn't archaeology, **(2)** Phase 2's containerize-and-deploy
-so it's reachable outside your machine, **(3)** Phase 3's shared-secret auth
-so step 2 doesn't leave your lead data open to anyone with the URL. Phases 1,
-4, and 5 improve quality/trust in the data but don't block you from actually
-using the tool day to day.
+Given the goal is "a tool I can deploy and use normally" (not resell):
+**(1)** git init + first commit — done. **(2)** deploy so it's reachable
+outside your machine (Render + Neon + Cloudflare Pages) — done, see
+`DEPLOYMENT.md`. **(3)** Phase 3's shared-secret auth is the next real gap —
+right now anyone who finds your Cloudflare Pages URL can read/write your
+lead database, since deploying made the CORS fix from earlier in this
+session necessary-but-not-sufficient (it restricts *which sites* can call
+the API from a browser, it doesn't require a login). That's genuinely next.
+Phases 1, 4, and 5 improve quality/trust in the data but don't block you
+from actually using the tool day to day.
