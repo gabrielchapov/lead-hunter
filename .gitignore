@@ -14,3 +14,6 @@ backend/.env
 # frontend
 frontend/dist/
 frontend/.env.local
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts

@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, LogOut } from "lucide-react";
 import type { ViewName } from "../types";
 
 const TABS: { id: ViewName; label: string }[] = [
@@ -13,9 +13,10 @@ interface Props {
   onViewChange: (v: ViewName) => void;
   onExportCsv: () => void;
   onExportExcel: () => void;
+  onLogout: () => void;
 }
 
-export default function TopNav({ view, onViewChange, onExportCsv, onExportExcel }: Props) {
+export default function TopNav({ view, onViewChange, onExportCsv, onExportExcel, onLogout }: Props) {
   return (
     <header className="topnav">
       <div className="topnav-brand">
@@ -45,6 +46,9 @@ export default function TopNav({ view, onViewChange, onExportCsv, onExportExcel 
         </button>
         <button className="btn btn-secondary" onClick={onExportExcel}>
           <Download size={14} /> Excel
+        </button>
+        <button className="btn btn-icon" onClick={onLogout} title="Sair">
+          <LogOut size={14} />
         </button>
       </div>
     </header>

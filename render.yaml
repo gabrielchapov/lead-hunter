@@ -24,3 +24,14 @@ services:
       # Set this AFTER the frontend is deployed and you know its URL.
       - key: CORS_ORIGINS
         sync: false
+      # Login credentials for the single-user auth gate (see
+      # backend/app/auth.py). Pick your own values in the Render dashboard.
+      - key: AUTH_USERNAME
+        sync: false
+      - key: AUTH_PASSWORD
+        sync: false
+      # Signing key for login tokens — any long random string. Generate one
+      # with `openssl rand -hex 32` and paste it in, don't reuse a real
+      # password here.
+      - key: JWT_SECRET
+        sync: false

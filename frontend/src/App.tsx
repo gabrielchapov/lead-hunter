@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import TopNav from "./components/TopNav";
+import LoginPage from "./components/LoginPage";
 import MapaView from "./components/MapaView";
 import KanbanView from "./components/KanbanView";
 import PainelView from "./components/PainelView";
 import MensagensView from "./components/MensagensView";
 import DetailsDialog from "./components/DetailsDialog";
-import { fetchLeads, updateStage as apiUpdateStage, enrichLead as apiEnrichLead, importFromOverpass } from "./api";
+import {
+  AuthError,
+  clearToken,
+  fetchLeads,
+  getToken,
+  updateStage as apiUpdateStage,
+  enrichLead as apiEnrichLead,
+  importFromOverpass,
+} from "./api";
 import { filterAndSortLeads } from "./utils/filters";
 import { exportCsv, exportExcel } from "./utils/export";
 import { DEFAULT_TEMPLATE } from "./utils/whatsapp";
@@ -13,6 +22,7 @@ import { DEFAULT_LOCATION, geocode } from "./utils/geocode";
 import type { Channels, Lead, SortBy, Stage, ViewName } from "./types";
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => !!getToken());
   const [view, setView] = useState<ViewName>("mapa");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,16 +46,26 @@ export default function App() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (!authed) return;
     fetchLeads()
       .then((data) => {
         setLeads(data);
         setLoading(false);
       })
       .catch((err) => {
+        if (err instanceof AuthError) {
+          setAuthed(false);
+          return;
+        }
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [authed]);
+
+  function handleLogout() {
+    clearToken();
+    setAuthed(false);
+  }
 
   const center = useMemo(() => geocode(location), [location]);
 
@@ -90,6 +110,7 @@ export default function App() {
     try {
       await apiUpdateStage(id, stage);
     } catch (err) {
+      if (err instanceof AuthError) return setAuthed(false);
       console.error("Failed to persist stage change", err);
     }
   }
@@ -100,6 +121,7 @@ export default function App() {
       const updated = await apiEnrichLead(id);
       setLeads((prev) => prev.map((l) => (l.id === id ? { ...updated, enriching: false } : l)));
     } catch (err) {
+      if (err instanceof AuthError) return setAuthed(false);
       // No real enrichment provider is wired up yet — the backend
       // deliberately refuses to invent contact info rather than
       // fabricating a phone number, so surface that to the user instead
@@ -124,6 +146,10 @@ export default function App() {
         setLeads(updated);
       }
     } catch (err) {
+      if (err instanceof AuthError) {
+        setAuthed(false);
+        return;
+      }
       console.error("Failed to import from OpenStreetMap", err);
       alert("Erro ao importar do OpenStreetMap. Verifique a localização e tente novamente.");
     } finally {
@@ -136,11 +162,16 @@ export default function App() {
     window.setTimeout(() => setSaved(false), 1600);
   }
 
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />;
+  }
+
   return (
     <div className="app">
       <TopNav
         view={view}
         onViewChange={setView}
+        onLogout={handleLogout}
         onExportCsv={() => exportCsv(filtered)}
         onExportExcel={() => exportExcel(filtered)}
       />

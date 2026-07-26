@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List, Optional
 
+from app.auth import create_token, require_auth, verify_credentials
 from app.database import get_db, engine
 from app.models import Prospect
 from app.scrapers import scrape_overpass
@@ -63,8 +64,20 @@ def read_root():
     }
 
 
+@app.post("/api/v1/auth/login")
+def login(payload: dict = Body(...)):
+    """Single-user login. Credentials live in AUTH_USERNAME/AUTH_PASSWORD
+    env vars — there's no user table, this is a solo tool being exposed
+    to the internet, not a multi-tenant product."""
+    username = payload.get("username", "")
+    password = payload.get("password", "")
+    if not verify_credentials(username, password):
+        raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")
+    return {"token": create_token(username)}
+
+
 @app.get("/api/v1/leads", response_model=List[dict])
-def get_leads(db: Session = Depends(get_db)):
+def get_leads(db: Session = Depends(get_db), _user: str = Depends(require_auth)):
     """Return every prospect. Filtering/sorting by category, radius,
     channel, and text is done client-side against this full list, per
     the design spec (the dataset here is small enough that a full
@@ -74,7 +87,12 @@ def get_leads(db: Session = Depends(get_db)):
 
 
 @app.patch("/api/v1/leads/{prospect_id}/stage")
-def update_stage(prospect_id: str, payload: dict = Body(...), db: Session = Depends(get_db)):
+def update_stage(
+    prospect_id: str,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    _user: str = Depends(require_auth),
+):
     """Move a prospect between Kanban stages."""
     stage = payload.get("stage")
     if stage not in VALID_STAGES:
@@ -89,7 +107,7 @@ def update_stage(prospect_id: str, payload: dict = Body(...), db: Session = Depe
 
 
 @app.post("/api/v1/leads/{prospect_id}/enrich")
-def enrich_lead(prospect_id: str, db: Session = Depends(get_db)):
+def enrich_lead(prospect_id: str, db: Session = Depends(get_db), _user: str = Depends(require_auth)):
     """Attempt to enrich a prospect's contact details.
 
     IMPORTANT: there is no real enrichment provider wired up yet (no
@@ -123,7 +141,7 @@ def enrich_lead(prospect_id: str, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/v1/leads")
-def clear_all_leads(db: Session = Depends(get_db)):
+def clear_all_leads(db: Session = Depends(get_db), _user: str = Depends(require_auth)):
     """Wipe every prospect from the database. Use this to start clean for
     a new market/region rather than accumulating leads across unrelated
     searches indefinitely."""
@@ -138,6 +156,7 @@ def import_from_overpass(
     category: Optional[str] = Body(None, embed=True),
     radius_km: float = Body(25, embed=True),
     db: Session = Depends(get_db),
+    _user: str = Depends(require_auth),
 ):
     """Scrape OpenStreetMap for businesses in a location via Overpass API.
 

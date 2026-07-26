@@ -9,6 +9,25 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000/api/v1"
 // Strip /api/v1 to get the base URL for non-REST endpoints
 const BASE_URL = API_BASE.replace(/\/api\/v1$/, "");
 
+const TOKEN_KEY = "lh_token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+// Thrown when the backend rejects a request as unauthorized (missing,
+// expired, or invalid token) — callers use this to distinguish "log in
+// again" from an ordinary network/server error.
+export class AuthError extends Error {}
+
 // Surfaces the backend's actual error message (FastAPI puts it in
 // `detail`) instead of just a bare status code — every failure used to
 // look identical in the console with no way to tell them apart.
@@ -21,14 +40,40 @@ async function extractErrorDetail(res: Response): Promise<string> {
   }
 }
 
+// Every leads/kanban/etc. endpoint requires a Bearer token — this wrapper
+// attaches it and turns a 401 into an AuthError so the app can drop back
+// to the login screen instead of showing a raw fetch error.
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers = new Headers(options.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    clearToken();
+    throw new AuthError("Sessão expirada. Faça login novamente.");
+  }
+  return res;
+}
+
+export async function login(username: string, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) throw new Error(await extractErrorDetail(res));
+  const { token } = await res.json();
+  setToken(token);
+}
+
 export async function fetchLeads(): Promise<Lead[]> {
-  const res = await fetch(`${API_BASE}/leads`);
+  const res = await authFetch(`${API_BASE}/leads`);
   if (!res.ok) throw new Error(`Failed to fetch leads: ${await extractErrorDetail(res)}`);
   return res.json();
 }
 
 export async function updateStage(id: string, stage: Stage): Promise<Lead> {
-  const res = await fetch(`${API_BASE}/leads/${id}/stage`, {
+  const res = await authFetch(`${API_BASE}/leads/${id}/stage`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ stage }),
@@ -38,13 +83,13 @@ export async function updateStage(id: string, stage: Stage): Promise<Lead> {
 }
 
 export async function enrichLead(id: string): Promise<Lead> {
-  const res = await fetch(`${API_BASE}/leads/${id}/enrich`, { method: "POST" });
+  const res = await authFetch(`${API_BASE}/leads/${id}/enrich`, { method: "POST" });
   if (!res.ok) throw new Error(await extractErrorDetail(res));
   return res.json();
 }
 
 export async function clearAllLeads(): Promise<{ status: string; deleted_count: number }> {
-  const res = await fetch(`${API_BASE}/leads`, { method: "DELETE" });
+  const res = await authFetch(`${API_BASE}/leads`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to clear leads: ${await extractErrorDetail(res)}`);
   return res.json();
 }
@@ -66,7 +111,7 @@ export async function importFromOverpass(
   category: string | null,
   radius_km: number = 25
 ): Promise<OverpassImportResult> {
-  const res = await fetch(`${API_BASE}/leads/import-overpass`, {
+  const res = await authFetch(`${API_BASE}/leads/import-overpass`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ location, category, radius_km }),
