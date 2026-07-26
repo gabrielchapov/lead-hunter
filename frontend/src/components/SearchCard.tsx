@@ -4,6 +4,7 @@ import { CATEGORIES } from "../types";
 interface Props {
   category: string;
   onCategoryChange: (v: string) => void;
+  observedCategories: string[];
   location: string;
   onLocationChange: (v: string) => void;
   radius: number;
@@ -19,6 +20,7 @@ interface Props {
 export default function SearchCard({
   category,
   onCategoryChange,
+  observedCategories,
   location,
   onLocationChange,
   radius,
@@ -41,11 +43,24 @@ export default function SearchCard({
           onChange={(e) => onCategoryChange(e.target.value)}
         >
           <option value="">Todas as categorias</option>
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
+          <optgroup label="Busca segmentada (importação)">
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </optgroup>
+          {observedCategories.filter((c) => !(CATEGORIES as readonly string[]).includes(c)).length > 0 && (
+            <optgroup label="Encontradas nos leads importados">
+              {observedCategories
+                .filter((c) => !(CATEGORIES as readonly string[]).includes(c))
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </optgroup>
+          )}
         </select>
       </div>
 

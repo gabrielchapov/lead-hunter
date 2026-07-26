@@ -12,6 +12,7 @@ interface Props {
   filtered: FilteredLead[];
   category: string;
   onCategoryChange: (v: string) => void;
+  observedCategories: string[];
   location: string;
   onLocationChange: (v: string) => void;
   radius: number;
@@ -68,6 +69,7 @@ export default function MapaView(props: Props) {
       <SearchCard
         category={category}
         onCategoryChange={props.onCategoryChange}
+        observedCategories={props.observedCategories}
         location={props.location}
         onLocationChange={props.onLocationChange}
         radius={radius}

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CATEGORIES, temperatureOf } from "../types";
+import { temperatureOf } from "../types";
 import type { Lead } from "../types";
 
 interface Props {
@@ -19,10 +19,18 @@ export default function PainelView({ leads, location, radius, category }: Props)
   }, [leads]);
 
   const byCategory = useMemo(() => {
-    const counts = CATEGORIES.map((c) => ({
-      label: c,
-      count: leads.filter((l) => l.category === c).length,
-    }));
+    // Derived from whatever categories actually show up in the data —
+    // imports without a category filter bring back raw OSM tag values
+    // (supermarket, hotel, restaurant, ...), not just the 5 niches this
+    // tool originally shipped with, so a fixed category list here left
+    // most real leads uncounted.
+    const tally = new Map<string, number>();
+    for (const lead of leads) {
+      tally.set(lead.category, (tally.get(lead.category) ?? 0) + 1);
+    }
+    const counts = Array.from(tally, ([label, count]) => ({ label, count })).sort(
+      (a, b) => b.count - a.count
+    );
     const max = Math.max(1, ...counts.map((c) => c.count));
     return { counts, max };
   }, [leads]);

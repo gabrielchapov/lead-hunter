@@ -69,6 +69,16 @@ export default function App() {
 
   const center = useMemo(() => geocode(location), [location]);
 
+  // What's actually in the data, independent of the current category filter —
+  // OSM imports without a category filter bring back raw tag values
+  // (supermarket, hotel, restaurant, ...) well beyond the 5 niches this
+  // tool originally shipped with, so the filter dropdown needs to reflect
+  // reality instead of a fixed enum.
+  const observedCategories = useMemo(
+    () => Array.from(new Set(leads.map((l) => l.category))).sort((a, b) => a.localeCompare(b)),
+    [leads]
+  );
+
   const filtered = useMemo(
     () =>
       filterAndSortLeads(leads, {
@@ -187,6 +197,7 @@ export default function App() {
               filtered={filtered}
               category={category}
               onCategoryChange={setCategory}
+              observedCategories={observedCategories}
               location={location}
               onLocationChange={setLocation}
               radius={radius}
