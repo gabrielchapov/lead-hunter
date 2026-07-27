@@ -136,13 +136,21 @@ options, roughly in order of effort:
 
 ## Phase 4 — Real enrichment + the WhatsApp audit tool
 
-`POST /api/v1/leads/{id}/enrich` is currently honest about doing nothing
-when OSM has no contact info (fixed this session), but "honest no-op" isn't
-the end state — it's a placeholder for a real lookup:
-1. Cheapest real option: Google Places API (Find Place + Place Details) —
-   costs money per call but has much better phone/website coverage than OSM
-   for Brazil. Gate it behind a budget cap (e.g. only enrich leads you've
-   actually moved to "contatado" in the kanban, not the whole imported set).
+**Google Places enrichment — code done, just needs the API key.**
+`backend/app/enrichment.py` + the updated `/enrich` endpoint call Places
+API (New) Text Search -> Place Details (phone/website, Essentials-tier
+field mask only) whenever `GOOGLE_PLACES_API_KEY` is set. Never
+overwrites contact info OSM already provided, only fills gaps, and bumps
+`score` the same way the initial OSM import does when it adds phone/site.
+Still honest about doing nothing with no key configured — no fabricated
+data either way. To turn it on: create a Google Cloud project, enable
+Places API (New), attach a billing account (required even for the free
+tier — 10,000 Essentials-field requests/month as of mid-2026), and set
+`GOOGLE_PLACES_API_KEY` on Render.
+Note the endpoint itself has no budget gate baked in — cost control is
+currently just "the frontend only ever calls this per-lead from a button
+click," so it's on you not to script bulk-calling it across hundreds of
+leads at once.
 2. Wire the existing `whatsapp-audit/` companion tool into the main flow
    instead of it being a fully separate manual step: add an "Auditar bot"
    action on a lead card that exports that one lead to the CSV shape

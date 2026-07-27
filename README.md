@@ -14,7 +14,7 @@ Encontre negócios locais sem site para prospectar, acompanhe-os num Kanban, vej
 - ✅ Painel com estatísticas e gráficos por categoria/temperatura
 - ✅ Editor de modelo de mensagem do WhatsApp com prévia ao vivo
 - ✅ Exportação CSV/Excel dos leads filtrados
-- ✅ Enriquecimento simulado (endpoint pronto para trocar por um provedor real depois)
+- ✅ Enriquecimento via Google Places (New) — opcional, requer `GOOGLE_PLACES_API_KEY`; sem a chave, o endpoint só confirma dados já vindos do OSM, nunca inventa contato
 
 ## Project Structure
 
@@ -88,7 +88,7 @@ Frontend: http://localhost:5173 · Backend: http://localhost:8000
 
 - `GET /api/v1/leads` — all prospects
 - `PATCH /api/v1/leads/{id}/stage` — move a prospect between Kanban stages (`{"stage": "contatado"}`)
-- `POST /api/v1/leads/{id}/enrich` — simulated contact-info enrichment (replace with a real provider later)
+- `POST /api/v1/leads/{id}/enrich` — fills in phone/website via Google Places (New) if `GOOGLE_PLACES_API_KEY` is set; otherwise just confirms existing OSM contact data (never fabricates)
 - `POST /api/v1/leads/import-overpass` — pull real businesses from OpenStreetMap for a location (`{"location": "Itapoá, SC", "category": null, "radius_km": 20}`)
 - `DELETE /api/v1/leads` — wipe all prospects
 

@@ -1,5 +1,6 @@
 import os
 
+import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,7 @@ from typing import List, Optional
 
 from app.auth import create_token, require_auth, verify_credentials
 from app.database import get_db, engine
+from app import enrichment
 from app.models import Prospect
 from app.scrapers import scrape_overpass
 
@@ -110,18 +112,32 @@ def update_stage(
 def enrich_lead(prospect_id: str, db: Session = Depends(get_db), _user: str = Depends(require_auth)):
     """Attempt to enrich a prospect's contact details.
 
-    IMPORTANT: there is no real enrichment provider wired up yet (no
-    Google Business Profile / CNPJ lookup / etc.). This endpoint does
-    NOT fabricate phone numbers, Instagram handles, or emails — inventing
-    a plausible-looking phone number for a real business and letting
-    someone message it would be actively harmful, not a a harmless demo.
-    Until a real provider is wired up here, this just confirms whatever
-    contact info Overpass/OSM already gave us, or reports that nothing
-    more is available.
+    If GOOGLE_PLACES_API_KEY is configured, looks the business up on
+    Google Places (Text Search -> Place Details) and fills in phone/
+    website fields OSM didn't have — never overwrites data that's
+    already there. This endpoint never fabricates contact info: with no
+    provider configured, or if Places has no match, it only confirms
+    whatever contact info Overpass/OSM already gave us.
     """
     prospect = db.get(Prospect, prospect_id)
     if prospect is None:
         raise HTTPException(status_code=404, detail="Prospect not found")
+
+    if enrichment.is_configured():
+        try:
+            result = enrichment.enrich(prospect.name, prospect.city, prospect.state)
+        except requests.RequestException as e:
+            raise HTTPException(status_code=502, detail=f"Consulta ao Google Places falhou: {str(e)}")
+
+        if result:
+            if result.get("phone") and not prospect.phone:
+                prospect.phone = result["phone"]
+                prospect.has_whatsapp = True
+                prospect.score = min(prospect.score + 15, 100)
+            if result.get("website") and not prospect.website:
+                prospect.website = result["website"]
+                prospect.has_site = True
+                prospect.score = min(prospect.score + 10, 100)
 
     if prospect.phone or prospect.instagram or prospect.email:
         prospect.enriched = True
@@ -129,13 +145,18 @@ def enrich_lead(prospect_id: str, db: Session = Depends(get_db), _user: str = De
         db.refresh(prospect)
         return prospect.as_dict()
 
+    db.commit()
     raise HTTPException(
         status_code=501,
         detail=(
             "Nenhum provedor de enriquecimento configurado. Este lead não tem "
             "contato disponível no OpenStreetMap, e nenhum dado é inventado — "
-            "configure um provedor real (Google Business Profile, CNPJ, etc.) "
-            "para preencher isso automaticamente."
+            "configure GOOGLE_PLACES_API_KEY para habilitar busca automática."
+        )
+        if not enrichment.is_configured()
+        else (
+            "Nenhuma informação de contato encontrada para este negócio no "
+            "Google Places."
         ),
     )
 

@@ -35,3 +35,10 @@ services:
       # password here.
       - key: JWT_SECRET
         sync: false
+      # Google Places (New) API key for POST /leads/{id}/enrich (see
+      # backend/app/enrichment.py). Optional — leave unset and enrich
+      # just confirms existing OSM contact data, no fabrication either
+      # way. Requires a Google Cloud project with Places API (New)
+      # enabled and billing attached.
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
