@@ -37,6 +37,7 @@ class Prospect(Base):
     score = Column(Integer, default=50)  # 0-100, drives "temperatura" client-side
     stage = Column(String, default="novo")  # novo | contatado | respondeu | fechado
     enriched = Column(Boolean, default=False)
+    qualified = Column(Boolean, default=False)  # manual gate before demo-generation (wayfinder ticket 01)
 
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -62,5 +63,6 @@ class Prospect(Base):
             "score": self.score,
             "stage": self.stage,
             "enriched": self.enriched,
+            "qualified": self.qualified,
             "notes": self.notes,
         }

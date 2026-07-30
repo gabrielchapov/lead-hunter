@@ -12,6 +12,7 @@ import {
   fetchLeads,
   getToken,
   updateStage as apiUpdateStage,
+  updateQualified as apiUpdateQualified,
   enrichLead as apiEnrichLead,
   importFromOverpass,
 } from "./api";
@@ -125,6 +126,18 @@ export default function App() {
     }
   }
 
+  async function handleQualify(id: string, qualified: boolean) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, qualified } : l)));
+    try {
+      await apiUpdateQualified(id, qualified);
+    } catch (err) {
+      if (err instanceof AuthError) return setAuthed(false);
+      console.error("Failed to persist qualified flag", err);
+      // Roll back the optimistic update — the toggle didn't actually persist.
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, qualified: !qualified } : l)));
+    }
+  }
+
   async function handleEnrich(id: string) {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, enriching: true } : l)));
     try {
@@ -216,6 +229,7 @@ export default function App() {
               onSelect={setSelectedId}
               onOpenDialog={setDialogId}
               onEnrich={handleEnrich}
+              onQualify={handleQualify}
               onImportOverpass={handleImportOverpass}
               importing={importing}
               template={template}

@@ -46,6 +46,7 @@ export interface Lead {
   score: number;
   stage: Stage;
   enriched: boolean;
+  qualified: boolean;
   notes: string | null;
   /** Client-only transient flag while an enrich request is in flight. */
   enriching?: boolean;

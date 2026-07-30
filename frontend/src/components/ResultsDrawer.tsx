@@ -15,6 +15,7 @@ interface Props {
   onSelect: (id: string) => void;
   onOpenDialog: (id: string) => void;
   onEnrich: (id: string) => void;
+  onQualify: (id: string, qualified: boolean) => void;
   template: string;
 }
 
@@ -34,6 +35,7 @@ export default function ResultsDrawer({
   onSelect,
   onOpenDialog,
   onEnrich,
+  onQualify,
   template,
 }: Props) {
   const hotWithWhatsapp = leads.filter((l) => l.score >= 60 && l.wa).length;
@@ -92,6 +94,7 @@ export default function ResultsDrawer({
             onSelect={() => onSelect(lead.id)}
             onOpenDialog={() => onOpenDialog(lead.id)}
             onEnrich={() => onEnrich(lead.id)}
+            onQualify={() => onQualify(lead.id, !lead.qualified)}
             template={template}
           />
         ))}

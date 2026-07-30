@@ -35,6 +35,7 @@ export default function DetailsDialog({ lead, template, onClose }: Props) {
           {row("Instagram", lead.instagram)}
           {row("E-mail", lead.email)}
           {row("Site", lead.website)}
+          {row("Qualificado", lead.qualified ? "Sim" : "Não")}
         </div>
 
         <div className="dialog-actions">

@@ -9,6 +9,7 @@ interface Props {
   onSelect: () => void;
   onOpenDialog: () => void;
   onEnrich: () => void;
+  onQualify: () => void;
   template: string;
 }
 
@@ -20,7 +21,7 @@ function contactLine(lead: Lead): string {
   return "sem contato — enriqueça";
 }
 
-export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnrich, template }: Props) {
+export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnrich, onQualify, template }: Props) {
   const temp = temperatureOf(lead.score);
 
   return (
@@ -53,6 +54,13 @@ export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnr
               <Sparkles size={13} /> Enriquecer
             </>
           )}
+        </button>
+        <button
+          className={`btn btn-secondary${lead.qualified ? " is-active" : ""}`}
+          onClick={onQualify}
+          title="Marca este lead como aprovado para receber uma demo"
+        >
+          {lead.qualified ? "✓ Qualificado" : "Qualificar"}
         </button>
       </div>
     </div>

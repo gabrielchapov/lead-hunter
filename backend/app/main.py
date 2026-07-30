@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, inspect, text
 from typing import List, Optional
 
 from app.auth import create_token, require_auth, verify_credentials
@@ -45,6 +45,25 @@ app.add_middleware(
 
 def create_db_tables():
     Prospect.__table__.create(bind=engine, checkfirst=True)
+    _add_missing_columns()
+
+
+def _add_missing_columns():
+    """checkfirst=True above only creates the table if it's entirely
+    absent — it does nothing for a table that already exists with an
+    older column set, which is exactly production's situation on every
+    deploy that adds a column. There's no Alembic (or any migration
+    tool) in this project yet; for the occasional single added column,
+    a guarded ALTER TABLE is simpler than introducing one. Revisit if
+    schema changes start happening often enough for this to get messy.
+    """
+    inspector = inspect(engine)
+    existing = {col["name"] for col in inspector.get_columns(Prospect.__tablename__)}
+    with engine.begin() as conn:
+        if "qualified" not in existing:
+            conn.execute(
+                text(f"ALTER TABLE {Prospect.__tablename__} ADD COLUMN qualified BOOLEAN DEFAULT FALSE")
+            )
 
 
 @app.on_event("startup")
@@ -61,6 +80,7 @@ def read_root():
         "endpoints": [
             "/api/v1/leads",
             "/api/v1/leads/{id}/stage",
+            "/api/v1/leads/{id}/qualify",
             "/api/v1/leads/{id}/enrich",
         ],
     }
@@ -103,6 +123,28 @@ def update_stage(
     if prospect is None:
         raise HTTPException(status_code=404, detail="Prospect not found")
     prospect.stage = stage
+    db.commit()
+    db.refresh(prospect)
+    return prospect.as_dict()
+
+
+@app.patch("/api/v1/leads/{prospect_id}/qualify")
+def update_qualified(
+    prospect_id: str,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    _user: str = Depends(require_auth),
+):
+    """Manual qualification gate (wayfinder ticket 01): marks whether a
+    lead is worth building a demo for. No scoring, purely a judgment
+    call the operator makes per lead."""
+    qualified = payload.get("qualified")
+    if not isinstance(qualified, bool):
+        raise HTTPException(status_code=400, detail="qualified must be a boolean")
+    prospect = db.get(Prospect, prospect_id)
+    if prospect is None:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    prospect.qualified = qualified
     db.commit()
     db.refresh(prospect)
     return prospect.as_dict()

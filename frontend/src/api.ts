@@ -82,6 +82,16 @@ export async function updateStage(id: string, stage: Stage): Promise<Lead> {
   return res.json();
 }
 
+export async function updateQualified(id: string, qualified: boolean): Promise<Lead> {
+  const res = await authFetch(`${API_BASE}/leads/${id}/qualify`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ qualified }),
+  });
+  if (!res.ok) throw new Error(`Failed to update qualified: ${await extractErrorDetail(res)}`);
+  return res.json();
+}
+
 export async function enrichLead(id: string): Promise<Lead> {
   const res = await authFetch(`${API_BASE}/leads/${id}/enrich`, { method: "POST" });
   if (!res.ok) throw new Error(await extractErrorDetail(res));
