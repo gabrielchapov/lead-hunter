@@ -205,7 +205,7 @@ export default function App() {
         return;
       }
       console.error("Failed to import from OpenStreetMap", err);
-      alert("Erro ao importar do OpenStreetMap. Verifique a localização e tente novamente.");
+      alert(err instanceof Error ? err.message : "Erro ao importar do OpenStreetMap.");
     } finally {
       setImporting(false);
     }

@@ -3,6 +3,7 @@ Business data scrapers — currently OpenStreetMap via Overpass API.
 Free, no API key needed, no rate limits, community-maintained data.
 """
 
+import time
 import uuid
 import math
 import unicodedata
@@ -11,6 +12,22 @@ from typing import Optional
 from geopy.geocoders import Nominatim
 
 from app.models import Prospect
+
+# Overpass's public instances have informal rate limits and visibly
+# degrade under load (confirmed empirically: overpass-api.de returned a
+# clean 504 on one request and a clean 200 on a retry seconds later) —
+# a single failed call doesn't mean the service is down, just that this
+# one request landed badly. Retry the primary with backoff before
+# falling back to community mirrors, rather than failing on the first
+# transient error.
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+]
+# Status codes worth retrying/falling back on - server-side overload,
+# not a problem with our query.
+RETRYABLE_STATUS = {429, 502, 503, 504}
 
 
 def _normalize(s: str) -> str:
@@ -115,6 +132,47 @@ def _build_overpass_query(
     return query
 
 
+def _post_to_overpass(query: str) -> dict:
+    """POST the query to Overpass, retrying the primary instance with
+    backoff before falling back to mirrors (see OVERPASS_ENDPOINTS).
+    Raises ValueError only once every endpoint/attempt has failed."""
+    headers = {
+        "User-Agent": "LeadHunterOSM/1.0 (+https://github.com/lead-hunter; contact: gabrielchapov.dev@gmail.com)",
+        "Accept": "application/json, text/plain, */*",
+    }
+    last_error = "unknown error"
+
+    for i, endpoint in enumerate(OVERPASS_ENDPOINTS):
+        is_last_endpoint = i == len(OVERPASS_ENDPOINTS) - 1
+        # One retry per endpoint, except the last - if every endpoint has
+        # already failed once, a second retry on the last one just burns
+        # time without meaningfully improving the odds.
+        attempts = 1 if is_last_endpoint else 2
+        for attempt in range(attempts):
+            try:
+                response = requests.post(endpoint, data={"data": query}, headers=headers, timeout=40)
+            except requests.RequestException as e:
+                last_error = f"{endpoint} request failed: {str(e)}"
+            else:
+                if response.status_code == 200:
+                    return response.json()
+                if response.status_code not in RETRYABLE_STATUS:
+                    # A non-retryable error (e.g. 400 for a malformed
+                    # query) won't be fixed by trying a different server -
+                    # fail fast instead of wasting the remaining attempts.
+                    raise ValueError(
+                        f"Overpass API returned {response.status_code}: {response.text[:300]}"
+                    )
+                last_error = f"{endpoint} returned {response.status_code}"
+
+            if attempt < attempts - 1:
+                time.sleep(2 ** attempt)  # 1s, then 2s before the next attempt
+
+    raise ValueError(
+        f"Overpass ficou indisponível em {len(OVERPASS_ENDPOINTS)} servidores. Último erro: {last_error}"
+    )
+
+
 def _distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """Haversine distance in km."""
     R = 6371
@@ -161,32 +219,14 @@ def scrape_overpass(
     # Build Overpass query
     query = _build_overpass_query(center_lat, center_lng, radius_km, tag_pairs)
 
-    # POST to Overpass API. Two things matter here that are easy to miss:
+    # POST to Overpass, with retry+mirror-fallback (see _post_to_overpass).
+    # Two things matter here that are easy to miss:
     # - The query must be sent as a form field named "data" (Overpass's
     #   documented POST convention), not as a raw body — some Overpass
     #   mirrors reject a bare body with 406 Not Acceptable.
     # - A real User-Agent is required; Overpass (and the Apache in front of
     #   it) will 406/403 generic "python-requests" agents.
-    headers = {
-        "User-Agent": "LeadHunterOSM/1.0 (+https://github.com/lead-hunter; contact: gabrielchapov.dev@gmail.com)",
-        "Accept": "application/json, text/plain, */*",
-    }
-    try:
-        response = requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data={"data": query},
-            headers=headers,
-            timeout=40,
-        )
-        if response.status_code != 200:
-            # Overpass returns the parser error as plain text/HTML in the body —
-            # surface it so a bad query is obvious instead of a bare "400".
-            raise ValueError(
-                f"Overpass API returned {response.status_code}: {response.text[:300]}"
-            )
-        data = response.json()
-    except requests.RequestException as e:
-        raise ValueError(f"Overpass API request failed: {str(e)}")
+    data = _post_to_overpass(query)
 
     # Parse results
     prospects = []
