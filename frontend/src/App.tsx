@@ -17,6 +17,7 @@ import {
   importFromOverpass,
   logSend,
   fetchOutreachStats,
+  generateDemo,
 } from "./api";
 import { filterAndSortLeads } from "./utils/filters";
 import { exportCsv, exportExcel } from "./utils/export";
@@ -172,6 +173,19 @@ export default function App() {
     }
   }
 
+  async function handleGenerateDemo(id: string) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, generatingDemo: true } : l)));
+    try {
+      const updated = await generateDemo(id);
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...updated, generatingDemo: false } : l)));
+    } catch (err) {
+      if (err instanceof AuthError) return setAuthed(false);
+      console.error("Failed to generate demo", err);
+      alert(err instanceof Error ? err.message : "Não foi possível gerar a demo.");
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, generatingDemo: false } : l)));
+    }
+  }
+
   async function handleImportOverpass(loc: string, cat: string | null) {
     setImporting(true);
     try {
@@ -293,7 +307,12 @@ export default function App() {
       )}
 
       {dialogLead && (
-        <DetailsDialog lead={dialogLead} onClose={() => setDialogId(null)} onSend={handleWhatsAppSend} />
+        <DetailsDialog
+          lead={dialogLead}
+          onClose={() => setDialogId(null)}
+          onSend={handleWhatsAppSend}
+          onGenerateDemo={() => handleGenerateDemo(dialogLead.id)}
+        />
       )}
     </div>
   );

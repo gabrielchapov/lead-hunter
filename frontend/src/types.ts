@@ -47,9 +47,12 @@ export interface Lead {
   stage: Stage;
   enriched: boolean;
   qualified: boolean;
+  hasDemo: boolean;
   notes: string | null;
   /** Client-only transient flag while an enrich request is in flight. */
   enriching?: boolean;
+  /** Client-only transient flag while a demo-generation request is in flight. */
+  generatingDemo?: boolean;
 }
 
 export interface Channels {

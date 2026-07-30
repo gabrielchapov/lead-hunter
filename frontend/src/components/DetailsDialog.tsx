@@ -1,10 +1,12 @@
 import { temperatureOf } from "../types";
 import type { Lead } from "../types";
+import { BASE_URL } from "../api";
 
 interface Props {
   lead: Lead;
   onClose: () => void;
   onSend: (lead: Lead) => void;
+  onGenerateDemo: () => void;
 }
 
 function row(label: string, value: string | null | undefined) {
@@ -16,7 +18,7 @@ function row(label: string, value: string | null | undefined) {
   );
 }
 
-export default function DetailsDialog({ lead, onClose, onSend }: Props) {
+export default function DetailsDialog({ lead, onClose, onSend, onGenerateDemo }: Props) {
   const temp = temperatureOf(lead.score);
 
   return (
@@ -35,12 +37,28 @@ export default function DetailsDialog({ lead, onClose, onSend }: Props) {
           {row("E-mail", lead.email)}
           {row("Site", lead.website)}
           {row("Qualificado", lead.qualified ? "Sim" : "Não")}
+          {row("Demo", lead.hasDemo ? "Gerada" : "Não gerada")}
         </div>
 
         <div className="dialog-actions">
           <button className="btn btn-secondary" onClick={onClose}>
             Fechar
           </button>
+          {lead.qualified &&
+            (lead.hasDemo ? (
+              <a
+                className="btn btn-secondary"
+                href={`${BASE_URL}/demo/${lead.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver demo
+              </a>
+            ) : (
+              <button className="btn btn-secondary" onClick={onGenerateDemo} disabled={lead.generatingDemo}>
+                {lead.generatingDemo ? "Gerando…" : "Gerar demo"}
+              </button>
+            ))}
           <button className="btn btn-primary" onClick={() => onSend(lead)} disabled={!lead.phone}>
             Abrir WhatsApp
           </button>

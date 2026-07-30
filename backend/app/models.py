@@ -41,6 +41,11 @@ class Prospect(Base):
     enriched = Column(Boolean, default=False)
     qualified = Column(Boolean, default=False)  # manual gate before demo-generation (wayfinder ticket 01)
 
+    # Generated demo site (wayfinder ticket 02) - stored, not regenerated
+    # per view, so the link stays stable even if the lead's data changes later.
+    demo_html = Column(String, nullable=True)
+    demo_generated_at = Column(DateTime, nullable=True)
+
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -66,6 +71,7 @@ class Prospect(Base):
             "stage": self.stage,
             "enriched": self.enriched,
             "qualified": self.qualified,
+            "hasDemo": self.demo_html is not None,
             "notes": self.notes,
         }
 

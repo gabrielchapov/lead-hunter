@@ -1,10 +1,12 @@
 import os
 import uuid
+from datetime import datetime, timezone
 
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select, inspect, text
 from typing import List, Optional
@@ -14,6 +16,7 @@ from app.database import get_db, engine
 from app import enrichment
 from app.models import Prospect, OutreachSend, template_id_for
 from app.scrapers import scrape_overpass
+from app.demo_sites import generator as demo_generator
 
 load_dotenv()
 
@@ -66,6 +69,12 @@ def _add_missing_columns():
             conn.execute(
                 text(f"ALTER TABLE {Prospect.__tablename__} ADD COLUMN qualified BOOLEAN DEFAULT FALSE")
             )
+        if "demo_html" not in existing:
+            conn.execute(text(f"ALTER TABLE {Prospect.__tablename__} ADD COLUMN demo_html VARCHAR"))
+        if "demo_generated_at" not in existing:
+            conn.execute(
+                text(f"ALTER TABLE {Prospect.__tablename__} ADD COLUMN demo_generated_at TIMESTAMP")
+            )
 
 
 @app.on_event("startup")
@@ -86,6 +95,8 @@ def read_root():
             "/api/v1/leads/{id}/enrich",
             "/api/v1/leads/{id}/sends",
             "/api/v1/outreach/stats",
+            "/api/v1/leads/{id}/demo",
+            "/demo/{id}",
         ],
     }
 
@@ -233,6 +244,45 @@ def update_qualified(
     db.commit()
     db.refresh(prospect)
     return prospect.as_dict()
+
+
+@app.post("/api/v1/leads/{prospect_id}/demo")
+def generate_demo(prospect_id: str, db: Session = Depends(get_db), _user: str = Depends(require_auth)):
+    """Generate a category-template demo site for a lead (wayfinder
+    ticket 02). Gated behind the qualification flag (ticket 01) — this
+    isn't something to bulk-run across every imported lead, only ones
+    already judged worth the pitch. Only categories with a real,
+    designed template are supported; an unlisted category returns a
+    clear 501 rather than falling back to a generic page."""
+    prospect = db.get(Prospect, prospect_id)
+    if prospect is None:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    if not prospect.qualified:
+        raise HTTPException(
+            status_code=400,
+            detail="Este lead ainda não foi qualificado. Marque como qualificado antes de gerar uma demo.",
+        )
+    if not demo_generator.is_supported(prospect.category):
+        raise HTTPException(
+            status_code=501,
+            detail=f"Ainda não existe um modelo de demo para a categoria '{prospect.category}'.",
+        )
+
+    prospect.demo_html = demo_generator.generate(prospect)
+    prospect.demo_generated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(prospect)
+    return {"demo_url": f"/demo/{prospect.id}", **prospect.as_dict()}
+
+
+@app.get("/demo/{prospect_id}", response_class=HTMLResponse)
+def view_demo(prospect_id: str, db: Session = Depends(get_db)):
+    """Public, unauthenticated - this is the link sent to the lead
+    themselves, they obviously don't have a Lead Hunter login."""
+    prospect = db.get(Prospect, prospect_id)
+    if prospect is None or not prospect.demo_html:
+        raise HTTPException(status_code=404, detail="Demo not found")
+    return HTMLResponse(content=prospect.demo_html)
 
 
 @app.post("/api/v1/leads/{prospect_id}/enrich")

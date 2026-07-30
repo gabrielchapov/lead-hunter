@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{name}}</title>
+<style>
+  :root {
+    --cream: #faf5ec;
+    --cream-2: #f2e9d8;
+    --ink: #2b211a;
+    --ink-soft: rgba(43, 33, 26, 0.62);
+    --terracotta: #b5522f;
+    --terracotta-deep: #963f22;
+    --line: rgba(43, 33, 26, 0.14);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+  .demo-badge {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    padding: 10px 16px;
+  }
+  .demo-badge b { color: var(--terracotta-deep); background: var(--cream); padding: 1px 6px; }
+
+  header {
+    padding: 72px 0 56px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--terracotta-deep);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    font-weight: 400;
+    margin: 0 0 16px;
+    letter-spacing: -0.01em;
+  }
+  .tagline {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 auto;
+  }
+
+  .cta-row {
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 26px;
+    border-radius: 999px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .btn-primary {
+    background: var(--terracotta);
+    color: var(--cream);
+  }
+  .btn-primary:hover { background: var(--terracotta-deep); transform: translateY(-1px); }
+  .btn-quiet {
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: none; }
+  .section-label {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .about-text { font-size: 17px; max-width: 58ch; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 28px;
+  }
+  .info-item dt {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--terracotta-deep);
+    margin-bottom: 6px;
+  }
+  .info-item dd { margin: 0; font-size: 16px; }
+
+  footer {
+    padding: 40px 0 64px;
+    text-align: center;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+  <div class="demo-badge">
+    Protótipo de site — feito para <b>{{name}}</b> em minutos. O site real seria personalizado com fotos e cardápio.
+  </div>
+
+  <header>
+    <div class="wrap">
+      <div class="eyebrow">{{category_label}} · {{location_label}}</div>
+      <h1>{{name}}</h1>
+      <p class="tagline">Sabores de {{location_label}} em um só lugar. Peça, reserve ou venha conhecer.</p>
+      <div class="cta-row">
+        {{whatsapp_block}}
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="wrap">
+      <div class="section-label">Sobre</div>
+      <p class="about-text">
+        {{name}} é um restaurante em {{location_label}}.
+        Este é um protótipo — o site final traria fotos reais, cardápio completo e a identidade
+        visual do estabelecimento.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-label">Onde estamos</div>
+      <dl class="info-grid">
+        <div class="info-item">
+          <dt>Endereço</dt>
+          <dd>{{address}}</dd>
+        </div>
+        <div class="info-item">
+          <dt>Categoria</dt>
+          <dd>{{category_label}}</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      Protótipo gerado automaticamente — não é o site oficial de {{name}}.
+    </div>
+  </footer>
+
+</body>
+</html>

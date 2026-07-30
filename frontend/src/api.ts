@@ -7,7 +7,7 @@ import type { Lead, OutreachStat, Stage } from "./types";
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000/api/v1";
 
 // Strip /api/v1 to get the base URL for non-REST endpoints
-const BASE_URL = API_BASE.replace(/\/api\/v1$/, "");
+export const BASE_URL = API_BASE.replace(/\/api\/v1$/, "");
 
 const TOKEN_KEY = "lh_token";
 
@@ -106,6 +106,12 @@ export async function logSend(id: string, templateText: string, variant?: string
 export async function fetchOutreachStats(): Promise<OutreachStat[]> {
   const res = await authFetch(`${API_BASE}/outreach/stats`);
   if (!res.ok) throw new Error(`Failed to fetch outreach stats: ${await extractErrorDetail(res)}`);
+  return res.json();
+}
+
+export async function generateDemo(id: string): Promise<Lead> {
+  const res = await authFetch(`${API_BASE}/leads/${id}/demo`, { method: "POST" });
+  if (!res.ok) throw new Error(await extractErrorDetail(res));
   return res.json();
 }
 
