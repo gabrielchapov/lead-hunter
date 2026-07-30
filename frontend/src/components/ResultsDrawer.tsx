@@ -16,7 +16,7 @@ interface Props {
   onOpenDialog: (id: string) => void;
   onEnrich: (id: string) => void;
   onQualify: (id: string, qualified: boolean) => void;
-  template: string;
+  onSend: (lead: Lead) => void;
 }
 
 function toggleChannel(channels: Channels, key: keyof Channels): Channels {
@@ -36,7 +36,7 @@ export default function ResultsDrawer({
   onOpenDialog,
   onEnrich,
   onQualify,
-  template,
+  onSend,
 }: Props) {
   const hotWithWhatsapp = leads.filter((l) => l.score >= 60 && l.wa).length;
 
@@ -95,7 +95,7 @@ export default function ResultsDrawer({
             onOpenDialog={() => onOpenDialog(lead.id)}
             onEnrich={() => onEnrich(lead.id)}
             onQualify={() => onQualify(lead.id, !lead.qualified)}
-            template={template}
+            onSend={() => onSend(lead)}
           />
         ))}
       </div>

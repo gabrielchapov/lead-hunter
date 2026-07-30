@@ -138,6 +138,7 @@
 .chart-card h5 { margin-bottom: var(--space-3); }
 .bar-row { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); font-size: 12px; }
 .bar-row .bar-label { width: 130px; flex: none; color: var(--color-neutral-700); }
+.bar-row-wide .bar-label { width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-track { flex: 1; height: 12px; background: var(--color-neutral-200); position: relative; }
 .bar-fill { height: 100%; }
 .bar-row .bar-count { width: 28px; text-align: right; flex: none; }

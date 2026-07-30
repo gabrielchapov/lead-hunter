@@ -32,9 +32,9 @@ interface Props {
   onOpenDialog: (id: string) => void;
   onEnrich: (id: string) => void;
   onQualify: (id: string, qualified: boolean) => void;
+  onSend: (lead: Lead) => void;
   onImportOverpass?: (location: string, category: string | null) => void;
   importing?: boolean;
-  template: string;
   isActive: boolean;
 }
 
@@ -98,7 +98,7 @@ export default function MapaView(props: Props) {
         onOpenDialog={props.onOpenDialog}
         onEnrich={props.onEnrich}
         onQualify={props.onQualify}
-        template={props.template}
+        onSend={props.onSend}
       />
     </div>
   );

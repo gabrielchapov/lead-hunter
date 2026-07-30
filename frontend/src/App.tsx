@@ -15,12 +15,14 @@ import {
   updateQualified as apiUpdateQualified,
   enrichLead as apiEnrichLead,
   importFromOverpass,
+  logSend,
+  fetchOutreachStats,
 } from "./api";
 import { filterAndSortLeads } from "./utils/filters";
 import { exportCsv, exportExcel } from "./utils/export";
-import { DEFAULT_TEMPLATE } from "./utils/whatsapp";
+import { DEFAULT_TEMPLATE, openWhatsApp } from "./utils/whatsapp";
 import { DEFAULT_LOCATION, geocode } from "./utils/geocode";
-import type { Channels, Lead, SortBy, Stage, ViewName } from "./types";
+import type { Channels, Lead, OutreachStat, SortBy, Stage, ViewName } from "./types";
 
 export default function App() {
   const [authed, setAuthed] = useState(() => !!getToken());
@@ -46,6 +48,8 @@ export default function App() {
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
   const [saved, setSaved] = useState(false);
 
+  const [outreachStats, setOutreachStats] = useState<OutreachStat[]>([]);
+
   useEffect(() => {
     if (!authed) return;
     fetchLeads()
@@ -62,6 +66,19 @@ export default function App() {
         setLoading(false);
       });
   }, [authed]);
+
+  // Refreshed each time Painel is opened rather than only once on load,
+  // since sends (and the replies they lead to) happen while the operator
+  // is elsewhere in the app.
+  useEffect(() => {
+    if (!authed || view !== "painel") return;
+    fetchOutreachStats()
+      .then(setOutreachStats)
+      .catch((err) => {
+        if (err instanceof AuthError) return setAuthed(false);
+        console.error("Failed to fetch outreach stats", err);
+      });
+  }, [authed, view]);
 
   function handleLogout() {
     clearToken();
@@ -180,6 +197,17 @@ export default function App() {
     }
   }
 
+  // Fires the actual wa.me send (unchanged behavior) and, separately,
+  // logs it for outreach instrumentation (wayfinder ticket 06). Logging
+  // failure must never block the send itself — it's just tracking.
+  function handleWhatsAppSend(lead: Lead) {
+    openWhatsApp(lead, template);
+    logSend(lead.id, template).catch((err) => {
+      if (err instanceof AuthError) return setAuthed(false);
+      console.error("Failed to log outreach send", err);
+    });
+  }
+
   function handleSaveTemplate() {
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1600);
@@ -230,9 +258,9 @@ export default function App() {
               onOpenDialog={setDialogId}
               onEnrich={handleEnrich}
               onQualify={handleQualify}
+              onSend={handleWhatsAppSend}
               onImportOverpass={handleImportOverpass}
               importing={importing}
-              template={template}
               isActive={view === "mapa"}
             />
           </div>
@@ -242,7 +270,13 @@ export default function App() {
           )}
 
           {view === "painel" && (
-            <PainelView leads={categoryFiltered} location={location} radius={radius} category={category} />
+            <PainelView
+              leads={categoryFiltered}
+              location={location}
+              radius={radius}
+              category={category}
+              outreachStats={outreachStats}
+            />
           )}
 
           {view === "mensagens" && (
@@ -259,7 +293,7 @@ export default function App() {
       )}
 
       {dialogLead && (
-        <DetailsDialog lead={dialogLead} template={template} onClose={() => setDialogId(null)} />
+        <DetailsDialog lead={dialogLead} onClose={() => setDialogId(null)} onSend={handleWhatsAppSend} />
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import requests
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ from typing import List, Optional
 from app.auth import create_token, require_auth, verify_credentials
 from app.database import get_db, engine
 from app import enrichment
-from app.models import Prospect
+from app.models import Prospect, OutreachSend, template_id_for
 from app.scrapers import scrape_overpass
 
 load_dotenv()
@@ -45,6 +46,7 @@ app.add_middleware(
 
 def create_db_tables():
     Prospect.__table__.create(bind=engine, checkfirst=True)
+    OutreachSend.__table__.create(bind=engine, checkfirst=True)
     _add_missing_columns()
 
 
@@ -82,6 +84,8 @@ def read_root():
             "/api/v1/leads/{id}/stage",
             "/api/v1/leads/{id}/qualify",
             "/api/v1/leads/{id}/enrich",
+            "/api/v1/leads/{id}/sends",
+            "/api/v1/outreach/stats",
         ],
     }
 
@@ -126,6 +130,87 @@ def update_stage(
     db.commit()
     db.refresh(prospect)
     return prospect.as_dict()
+
+
+@app.post("/api/v1/leads/{prospect_id}/sends")
+def log_send(
+    prospect_id: str,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    _user: str = Depends(require_auth),
+):
+    """Log a WhatsApp send for outreach instrumentation (wayfinder ticket
+    06). Called right when the operator clicks "WhatsApp" on a lead —
+    the actual send still happens client-side via a wa.me link; this
+    just records that it happened so reply rate can be tracked per
+    template later via GET /api/v1/outreach/stats."""
+    template_text = (payload.get("template_text") or "").strip()
+    if not template_text:
+        raise HTTPException(status_code=400, detail="template_text is required")
+    variant = payload.get("variant")
+
+    prospect = db.get(Prospect, prospect_id)
+    if prospect is None:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+
+    send = OutreachSend(
+        id=str(uuid.uuid4())[:8],
+        prospect_id=prospect_id,
+        template_id=template_id_for(template_text),
+        template_text=template_text,
+        variant=variant,
+    )
+    db.add(send)
+    db.commit()
+    db.refresh(send)
+    return send.as_dict()
+
+
+@app.get("/api/v1/outreach/stats")
+def outreach_stats(db: Session = Depends(get_db), _user: str = Depends(require_auth)):
+    """Reply-rate-per-template breakdown for the Painel view (wayfinder
+    ticket 06). "Reply" is a proxy, not a separate tracked event: a
+    sent-to lead currently sitting in stage 'respondeu' or 'fechado'
+    counts as replied, reusing the Kanban stage that already exists
+    rather than adding a new reply-event model."""
+    sends = db.execute(select(OutreachSend)).scalars().all()
+    if not sends:
+        return []
+
+    prospect_ids = {s.prospect_id for s in sends}
+    prospects_by_id = {
+        p.id: p
+        for p in db.execute(select(Prospect).where(Prospect.id.in_(prospect_ids))).scalars()
+    }
+
+    by_template: dict[str, dict] = {}
+    for send in sends:
+        bucket = by_template.setdefault(
+            send.template_id,
+            {"templateId": send.template_id, "templateText": send.template_text, "prospect_ids": set()},
+        )
+        bucket["prospect_ids"].add(send.prospect_id)
+
+    result = []
+    for bucket in by_template.values():
+        ids_for_template = bucket.pop("prospect_ids")
+        replied = sum(
+            1
+            for pid in ids_for_template
+            if prospects_by_id.get(pid) and prospects_by_id[pid].stage in ("respondeu", "fechado")
+        )
+        total = len(ids_for_template)
+        result.append(
+            {
+                **bucket,
+                "sentCount": total,
+                "repliedCount": replied,
+                "replyRate": round(replied / total, 3) if total else 0,
+            }
+        )
+
+    result.sort(key=lambda r: r["sentCount"], reverse=True)
+    return result
 
 
 @app.patch("/api/v1/leads/{prospect_id}/qualify")

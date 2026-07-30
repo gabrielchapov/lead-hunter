@@ -1,4 +1,4 @@
-import type { Lead, Stage } from "./types";
+import type { Lead, OutreachStat, Stage } from "./types";
 
 // Configurable so the frontend can point at whatever port the backend
 // actually ends up on (uvicorn defaults to 8000, but that port is
@@ -89,6 +89,23 @@ export async function updateQualified(id: string, qualified: boolean): Promise<L
     body: JSON.stringify({ qualified }),
   });
   if (!res.ok) throw new Error(`Failed to update qualified: ${await extractErrorDetail(res)}`);
+  return res.json();
+}
+
+// Fire-and-forget from the caller's perspective (see App.tsx handleWhatsAppSend)
+// but still a real request — instrumentation shouldn't silently do nothing.
+export async function logSend(id: string, templateText: string, variant?: string): Promise<void> {
+  const res = await authFetch(`${API_BASE}/leads/${id}/sends`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template_text: templateText, variant: variant ?? null }),
+  });
+  if (!res.ok) throw new Error(`Failed to log send: ${await extractErrorDetail(res)}`);
+}
+
+export async function fetchOutreachStats(): Promise<OutreachStat[]> {
+  const res = await authFetch(`${API_BASE}/outreach/stats`);
+  if (!res.ok) throw new Error(`Failed to fetch outreach stats: ${await extractErrorDetail(res)}`);
   return res.json();
 }
 

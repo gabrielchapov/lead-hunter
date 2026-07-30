@@ -1,11 +1,10 @@
 import { temperatureOf } from "../types";
 import type { Lead } from "../types";
-import { openWhatsApp } from "../utils/whatsapp";
 
 interface Props {
   lead: Lead;
-  template: string;
   onClose: () => void;
+  onSend: (lead: Lead) => void;
 }
 
 function row(label: string, value: string | null | undefined) {
@@ -17,7 +16,7 @@ function row(label: string, value: string | null | undefined) {
   );
 }
 
-export default function DetailsDialog({ lead, template, onClose }: Props) {
+export default function DetailsDialog({ lead, onClose, onSend }: Props) {
   const temp = temperatureOf(lead.score);
 
   return (
@@ -42,7 +41,7 @@ export default function DetailsDialog({ lead, template, onClose }: Props) {
           <button className="btn btn-secondary" onClick={onClose}>
             Fechar
           </button>
-          <button className="btn btn-primary" onClick={() => openWhatsApp(lead, template)} disabled={!lead.phone}>
+          <button className="btn btn-primary" onClick={() => onSend(lead)} disabled={!lead.phone}>
             Abrir WhatsApp
           </button>
         </div>

@@ -1,3 +1,5 @@
+import hashlib
+
 from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime
 from datetime import datetime, timezone
 from app.database import Base
@@ -65,4 +67,38 @@ class Prospect(Base):
             "enriched": self.enriched,
             "qualified": self.qualified,
             "notes": self.notes,
+        }
+
+
+def template_id_for(text: str) -> str:
+    """Stable short id derived from template text (wayfinder ticket 06)
+    — there's no multi-template management UI yet, so identity comes
+    from the content itself: the same text always maps to the same id,
+    any edit produces a new one, with no separate naming step required."""
+    return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()[:8]
+
+
+class OutreachSend(Base):
+    """A logged WhatsApp send, tagged by template so reply rate can be
+    tracked per template/variant (wayfinder ticket 06). The actual send
+    still happens client-side via a wa.me deep link — this just records
+    that it happened."""
+
+    __tablename__ = "outreach_sends"
+
+    id = Column(String, primary_key=True, index=True)
+    prospect_id = Column(String, index=True, nullable=False)
+    template_id = Column(String, index=True, nullable=False)
+    template_text = Column(String, nullable=False)
+    variant = Column(String, nullable=True)
+    sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "prospectId": self.prospect_id,
+            "templateId": self.template_id,
+            "templateText": self.template_text,
+            "variant": self.variant,
+            "sentAt": self.sent_at.isoformat() if self.sent_at else None,
         }

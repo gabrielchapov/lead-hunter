@@ -1,15 +1,20 @@
 import { useMemo } from "react";
 import { temperatureOf } from "../types";
-import type { Lead } from "../types";
+import type { Lead, OutreachStat } from "../types";
 
 interface Props {
   leads: Lead[];
   location: string;
   radius: number;
   category: string;
+  outreachStats: OutreachStat[];
 }
 
-export default function PainelView({ leads, location, radius, category }: Props) {
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
+export default function PainelView({ leads, location, radius, category, outreachStats }: Props) {
   const stats = useMemo(() => {
     const semSite = leads.filter((l) => !l.hasSite);
     const quentes = leads.filter((l) => temperatureOf(l.score) === "quente");
@@ -121,6 +126,34 @@ export default function PainelView({ leads, location, radius, category }: Props)
             </span>
             <span className="bar-count">{byTemperature.frio}</span>
           </div>
+        </div>
+      </div>
+
+      <div className="charts-row" style={{ gridTemplateColumns: "1fr", marginTop: "var(--space-6)" }}>
+        <div className="chart-card">
+          <h5>Taxa de resposta por modelo</h5>
+          {outreachStats.length === 0 && (
+            <div className="empty-state">
+              Nenhum envio registrado ainda — a taxa de resposta aparece aqui conforme mensagens
+              são enviadas pelo botão WhatsApp.
+            </div>
+          )}
+          {outreachStats.map((stat) => (
+            <div className="bar-row bar-row-wide" key={stat.templateId}>
+              <span className="bar-label" title={stat.templateText}>
+                {truncate(stat.templateText, 40)}
+              </span>
+              <span className="bar-track">
+                <span
+                  className="bar-fill"
+                  style={{ width: `${stat.replyRate * 100}%`, background: "var(--color-accent)" }}
+                />
+              </span>
+              <span className="bar-count">
+                {stat.repliedCount}/{stat.sentCount}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

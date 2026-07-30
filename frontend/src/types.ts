@@ -58,6 +58,15 @@ export interface Channels {
   em: boolean;
 }
 
+/** Per-template reply-rate breakdown from GET /api/v1/outreach/stats. */
+export interface OutreachStat {
+  templateId: string;
+  templateText: string;
+  sentCount: number;
+  repliedCount: number;
+  replyRate: number;
+}
+
 export function temperatureOf(score: number): Temperature {
   if (score >= 60) return "quente";
   if (score >= 45) return "morno";

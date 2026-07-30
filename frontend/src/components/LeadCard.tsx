@@ -1,7 +1,6 @@
 import { MessageCircle, Sparkles } from "lucide-react";
 import type { Lead } from "../types";
 import { temperatureOf } from "../types";
-import { openWhatsApp } from "../utils/whatsapp";
 
 interface Props {
   lead: Lead;
@@ -10,7 +9,7 @@ interface Props {
   onOpenDialog: () => void;
   onEnrich: () => void;
   onQualify: () => void;
-  template: string;
+  onSend: () => void;
 }
 
 function contactLine(lead: Lead): string {
@@ -21,7 +20,7 @@ function contactLine(lead: Lead): string {
   return "sem contato — enriqueça";
 }
 
-export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnrich, onQualify, template }: Props) {
+export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnrich, onQualify, onSend }: Props) {
   const temp = temperatureOf(lead.score);
 
   return (
@@ -42,7 +41,7 @@ export default function LeadCard({ lead, selected, onSelect, onOpenDialog, onEnr
       <div className="lead-card-contact">{contactLine(lead)}</div>
 
       <div className="lead-card-actions" onClick={(e) => e.stopPropagation()}>
-        <button className="btn btn-primary" onClick={() => openWhatsApp(lead, template)} disabled={!lead.phone}>
+        <button className="btn btn-primary" onClick={onSend} disabled={!lead.phone}>
           <MessageCircle size={13} /> WhatsApp
         </button>
         <button className="btn btn-secondary" onClick={onOpenDialog}>
