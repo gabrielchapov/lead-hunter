@@ -6,6 +6,7 @@ interface Props {
   lead: Lead;
   onClose: () => void;
   onSend: (lead: Lead) => void;
+  onQualify: () => void;
   onGenerateDemo: () => void;
 }
 
@@ -18,7 +19,7 @@ function row(label: string, value: string | null | undefined) {
   );
 }
 
-export default function DetailsDialog({ lead, onClose, onSend, onGenerateDemo }: Props) {
+export default function DetailsDialog({ lead, onClose, onSend, onQualify, onGenerateDemo }: Props) {
   const temp = temperatureOf(lead.score);
 
   return (
@@ -36,7 +37,18 @@ export default function DetailsDialog({ lead, onClose, onSend, onGenerateDemo }:
           {row("Instagram", lead.instagram)}
           {row("E-mail", lead.email)}
           {row("Site", lead.website)}
-          {row("Qualificado", lead.qualified ? "Sim" : "Não")}
+          <div className="dialog-row">
+            <dt>Qualificado</dt>
+            <dd>
+              <button
+                className={`btn btn-secondary${lead.qualified ? " is-active" : ""}`}
+                style={{ padding: "3px 10px", fontSize: 12 }}
+                onClick={onQualify}
+              >
+                {lead.qualified ? "✓ Qualificado" : "Qualificar"}
+              </button>
+            </dd>
+          </div>
           {row("Demo", lead.hasDemo ? "Gerada" : "Não gerada")}
         </div>
 

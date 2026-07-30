@@ -280,7 +280,12 @@ export default function App() {
           </div>
 
           {view === "kanban" && (
-            <KanbanView leads={categoryFiltered} onStageChange={handleStageChange} onOpenDialog={setDialogId} />
+            <KanbanView
+              leads={categoryFiltered}
+              onStageChange={handleStageChange}
+              onOpenDialog={setDialogId}
+              onQualify={handleQualify}
+            />
           )}
 
           {view === "painel" && (
@@ -311,6 +316,7 @@ export default function App() {
           lead={dialogLead}
           onClose={() => setDialogId(null)}
           onSend={handleWhatsAppSend}
+          onQualify={() => handleQualify(dialogLead.id, !dialogLead.qualified)}
           onGenerateDemo={() => handleGenerateDemo(dialogLead.id)}
         />
       )}

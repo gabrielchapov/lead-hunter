@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { STAGES, STAGE_LABELS, temperatureOf } from "../types";
 import type { Lead, Stage } from "../types";
 
@@ -6,9 +6,10 @@ interface Props {
   leads: Lead[];
   onStageChange: (id: string, stage: Stage) => void;
   onOpenDialog: (id: string) => void;
+  onQualify: (id: string, qualified: boolean) => void;
 }
 
-export default function KanbanView({ leads, onStageChange, onOpenDialog }: Props) {
+export default function KanbanView({ leads, onStageChange, onOpenDialog, onQualify }: Props) {
   return (
     <div className="kanban-view">
       <div className="kanban-board">
@@ -30,6 +31,14 @@ export default function KanbanView({ leads, onStageChange, onOpenDialog }: Props
                       <div className="kanban-card-footer">
                         <span className={`tag tag-${temp}`}>{lead.score}</span>
                         <div className="kanban-card-moves" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className={lead.qualified ? "is-active" : ""}
+                            onClick={() => onQualify(lead.id, !lead.qualified)}
+                            aria-label={lead.qualified ? "Qualificado" : "Marcar como qualificado"}
+                            title={lead.qualified ? "Qualificado" : "Marcar como qualificado"}
+                          >
+                            <Check size={14} />
+                          </button>
                           <button
                             disabled={colIndex === 0}
                             onClick={() => onStageChange(lead.id, STAGES[colIndex - 1])}

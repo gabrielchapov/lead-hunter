@@ -124,6 +124,7 @@
   color: var(--color-text); cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .kanban-card-moves button:disabled { opacity: 0.25; cursor: not-allowed; }
+.kanban-card-moves button.is-active { background: var(--color-accent); color: #071023; border-color: var(--color-accent); }
 
 /* — Painel view — */
 .painel-view { height: 100%; overflow-y: auto; padding: 28px 32px; }
